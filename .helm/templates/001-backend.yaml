@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  replicas: {{ .Values.backendReplicas }}
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - image: {{ .Values.werf.image.backend }}
+          name: backend
+          resources:
+            requests:
+              cpu: 500m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health-check
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /health-check
+              port: 8080
+---
+{{- include "service" (list "backend") }}

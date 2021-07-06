@@ -1,0 +1,31 @@
+{{- $name := index . 0 }}
+artifact: {{ $name }}-binary
+from: golang:1.16.6-buster
+git:
+  - add: /cmd/{{ $name }}
+    to: /project/cmd/{{ $name }}
+    stageDependencies:
+      setup:
+        - "**/*"
+  - add: /go.mod
+    to: /project/go.mod
+  - add: /go.sum
+    to: /project/go.sum
+import:
+  - artifact: go-deps
+    before: setup
+    add: /go
+shell:
+  setup:
+    # `-tags netgo` is important - otherwise cannot be run on distroless ("exec user process caused: no such file or directory")
+    - cd /project
+    - go build -ldflags='-s -w -extldflags "-static"' -tags netgo -trimpath -o /bin/main ./cmd/{{ $name }}
+---
+image: {{ $name }}
+from: gcr.io/distroless/static-debian10
+import:
+  - artifact: {{ $name }}-binary
+    before: setup
+    add: /bin/main
+docker:
+  ENTRYPOINT: ["/bin/main"]

@@ -1,0 +1,4 @@
+ingress:
+  host: localhost
+backendReplicas: 1
+frontendReplicas: 1

@@ -1,0 +1,10 @@
+node_modules
+.DS_Store
+*.local
+.idea/inspectionProfiles/
+.idea/compiler.xml
+.idea/workspace.xml
+.idea/misc.xml
+dist/
+.netlify
+.werf_secret_key file

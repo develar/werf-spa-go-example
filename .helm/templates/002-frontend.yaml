@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  replicas: {{ .Values.frontendReplicas }}
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - image: {{ .Values.werf.image.frontend }}
+          name: frontend
+          resources:
+            requests:
+              cpu: 200m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 192Mi
+          ports:
+            - containerPort: 8080
+---
+{{- include "service" (list "frontend") }}

@@ -1,0 +1,32 @@
+# see https://blog.flant.com/advanced-helm-templating/ and https://werf.io/documentation/v1.2/reference/werf_yaml_template_engine.html
+
+{{ $_ := set . "FrontendBuildImage" "node:16.6.0-slim" }}
+{{ $_ := set . "PnpmVersion" "6.11.5" }}
+{{ $_ := set . "NginxVersion" "1.21.1" }}
+
+configVersion: 1
+project: werf-spa-go-example
+---
+artifact: go-deps
+from: golang:1.16.6-buster
+git:
+  - add: /go.mod
+    to: /project/go.mod
+    stageDependencies:
+      install:
+        - "*"
+  - add: /go.sum
+    to: /project/go.sum
+    stageDependencies:
+      install:
+        - "*"
+shell:
+  install:
+    - cd /project
+    - go mod download
+---
+{{ include "go.tmpl" (list "backend") }}
+---
+{{ include "nginx-distroless.tmpl" (list .) }}
+---
+{{ include "frontend-spa.tmpl" (list . "frontend" "src") }}
