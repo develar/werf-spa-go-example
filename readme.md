@@ -1,5 +1,10 @@
 Example of using [Werf](https://werf.io) to deploy backend in Go and front-end SPA.
 
+What's make Werf different from [DevSpace](https://devspace.sh)? [Stapel](https://werf.io/documentation/v1.2/internals/build_process.html#building-a-stage-of-the-stapel-image-and-stapel-artifact). 
+
+> The distinctive feature of werf is that it uses the git repository (instead of the project directory) as a source of files for the build context
+
+
 ## Local Cluster
 
 ```shell
