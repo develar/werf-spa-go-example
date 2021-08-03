@@ -1,26 +1,71 @@
 {{- $ := index . 0 }}
 
+# distroless and rootless (listen 8080 instead of 80) minimal build of nginx
+# https, compression and a lot of other functionality is not included - k8s ingress is responsible for that
 artifact: nginx-distroless
-from: "nginxinc/nginx-unprivileged:{{ $.NginxVersion }}"
-# https://github.com/kyos0109/nginx-distroless/blob/master/Dockerfile
+from: gcc:10.3.0-buster
 shell:
   install:
-    - mkdir -p /opt/var/cache/nginx
-    - cp -a --parents /usr/lib/nginx /opt
-    - cp -a --parents /usr/share/nginx /opt
-    - cp -a --parents /var/log/nginx /opt
-    - cp -aL --parents /var/run /opt
-    - cp -a --parents /etc/nginx /opt
-    - cp -a --parents /etc/passwd /opt
-    - cp -a --parents /etc/group /opt
-    - cp -a --parents /usr/sbin/nginx /opt
-    - cp -a --parents /usr/sbin/nginx-debug /opt
-    - cp -a --parents /lib/x86_64-linux-gnu/ld-* /opt
-    - cp -a --parents /lib/x86_64-linux-gnu/libpcre.so.* /opt
-    - cp -a --parents /lib/x86_64-linux-gnu/libz.so.* /opt
-    - cp -a --parents /lib/x86_64-linux-gnu/libc* /opt
-    - cp -a --parents /lib/x86_64-linux-gnu/libdl* /opt
-    - cp -a --parents /lib/x86_64-linux-gnu/libpthread* /opt
-    - cp -a --parents /lib/x86_64-linux-gnu/libcrypt* /opt
-    - cp -a --parents /usr/lib/x86_64-linux-gnu/libssl.so.* /opt
-    - cp -a --parents /usr/lib/x86_64-linux-gnu/libcrypto.so.* /opt
+    - mkdir -p /tmp/project
+    - cd /tmp/project
+    - curl -fSL https://nginx.org/download/nginx-{{ required "" $.NginxVersion }}.tar.gz | tar -zx --strip-components=1
+    - >
+      ./configure --prefix=/opt/nginx
+      --without-http_gzip_module --without-http_ssi_module --without-http_userid_module 
+      --without-http_access_module --without-http_auth_basic_module --without-http_mirror_module --without-http_autoindex_module
+      --without-http_geo_module --without-http_map_module --without-http_split_clients_module --without-http_referer_module
+      --without-http_rewrite_module --without-http_proxy_module --without-http_fastcgi_module  --without-http_uwsgi_module
+      --without-http_scgi_module --without-http_grpc_module --without-http_memcached_module --without-http_limit_conn_module
+      --without-http_limit_req_module --without-http_empty_gif_module --without-http_browser_module
+      --without-http_upstream_hash_module --without-http_upstream_ip_hash_module --without-http_upstream_least_conn_module
+      --without-http_upstream_random_module --without-http_upstream_keepalive_module --without-http_upstream_zone_module
+      --without-stream_limit_conn_module --without-stream_access_module --without-stream_geo_module --without-stream_map_module
+      --without-stream_split_clients_module --without-stream_upstream_hash_module --without-stream_upstream_least_conn_module
+      --without-stream_upstream_random_module --without-stream_upstream_zone_module
+    - make -j4
+    - make install
+    - rm -rf /tmp/project
+  # "all the images have the nonroot user and group"
+  # https://github.com/GoogleContainerTools/distroless/issues/235#issuecomment-503746132
+  setup:
+    - |
+      cat > /opt/nginx/conf/nginx.conf << 'EOL'
+      daemon off;
+      worker_processes auto;
+      user nonroot;
+
+      events {
+        worker_connections 1024;
+      }
+
+      http {
+        include mime.types;
+        default_type application/octet-stream;
+
+        sendfile  on;
+        tcp_nopush on;
+
+        keepalive_timeout 65;
+
+        server {
+          listen 8080;
+          server_name localhost;
+          root /dist;
+
+          # see https://medium.com/adobetech/an-http-caching-strategy-for-static-assets-configuring-the-server-1192452ce06a about caching
+          location / {
+            try_files "" /index.html =404;
+            add_header Cache-Control "no-cache";
+          }
+
+          location /favicon.ico {
+            add_header Cache-Control "no-cache";
+          }
+
+          location /assets/ {
+            etag off;
+            add_header Cache-Control "public,max-age=31536000,immutable";
+          }
+        }
+      }
+      EOL

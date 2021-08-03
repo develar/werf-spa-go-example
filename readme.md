@@ -4,7 +4,6 @@ What's make Werf different from [DevSpace](https://devspace.sh)? [Stapel](https:
 
 > The distinctive feature of werf is that it uses the git repository (instead of the project directory) as a source of files for the build context
 
-
 ## Local Cluster
 
 ```shell
@@ -28,3 +27,8 @@ export WERF_ENV=dev
 ```
 
 See [Environment](https://werf.io/documentation/v1.2/advanced/helm/configuration/templates.html#environment) docs about `WERF_ENV=dev`.
+
+# Deployment
+
+After `werf converge --dev`, `http://localhost:8080/` will be available on a host machine.
+See [werf converge](https://werf.io/documentation/v1.2/reference/cli/werf_converge.html).

@@ -42,20 +42,13 @@ shell:
 ---
 image: {{ $name }}
 from: gcr.io/distroless/base-debian10
-git:
-  - add: /.werf/nginx-spa.conf
-    to: /etc/nginx/conf.d/default.conf
-    stageDependencies:
-      setup:
-        - "*"
 import:
   - artifact: nginx-distroless
     before: install
-    add: /opt
-    to: /
+    add: /opt/nginx
   - artifact: {{ $name }}-dist
     before: setup
     add: /project/dist
     to: /dist
 docker:
-  ENTRYPOINT: ["nginx", "-g", "daemon off;"]
+  ENTRYPOINT: ["/opt/nginx/sbin/nginx"]
